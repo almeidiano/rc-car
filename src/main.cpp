@@ -16,11 +16,12 @@ int PWMB = 3;   // Speed control (PWM)
 void frente();
 void tras();
 void parada();
+void curvaDireita();
+void curvaEsquerda();
 
 void setup() {
   // Inicializar Serial para debug (9600 baud)
   Serial.begin(9600);
-  Serial.println("=== Sistema iniciado ===");
   
   // Pino de controle lógico
   pinMode(STBY, OUTPUT);
@@ -37,7 +38,6 @@ void setup() {
 
   // Habilitar o driver
   digitalWrite(STBY, HIGH);
-  Serial.println("Driver habilitado");
 }
 
 // Motor movendo para frente
@@ -87,6 +87,47 @@ void parada() {
   Serial.println("   Todos os motores parados");
 }
 
+void curvaSuaveDireita() {
+  // Para curvar à direita avançando:
+  // Motor ESQUERDO rápido, motor DIREITO lento.
+  
+  digitalWrite(AIN1, LOW); 
+  digitalWrite(AIN2, HIGH); 
+  analogWrite(PWMA, 250); // Rápido
+  
+  digitalWrite(BIN1, HIGH); 
+  digitalWrite(BIN2, LOW);
+  analogWrite(PWMB, 170); // Lento
+}
+
+void curvaSuaveEsquerda() {
+  // Para curvar à esquerda avançando:
+  // Motor DIREITO rápido, motor ESQUERDO lento.
+  
+  digitalWrite(BIN1, HIGH); 
+  digitalWrite(BIN2, LOW);
+  analogWrite(PWMB, 250); // Rápido
+  
+  digitalWrite(AIN1, LOW); 
+  digitalWrite(AIN2, HIGH);
+  analogWrite(PWMA, 170); // Lento
+}
+
+// void curvaExtremaEsquerda() {
+//   Serial.println("-> CURVA ESQUERDA");
+//   // Motor A (lado direito) parado
+//   digitalWrite(AIN1, LOW);
+//   digitalWrite(AIN2, LOW);
+//   analogWrite(PWMA, 0);
+//   Serial.println("   Motor A: AIN1=LOW, AIN2=LOW, PWMA=0");
+
+//   // Motor B (lado esquerdo) para frente
+//   digitalWrite(BIN1, HIGH);
+//   digitalWrite(BIN2, LOW);
+//   analogWrite(PWMB, 255);
+//   Serial.println("   Motor B: BIN1=HIGH, BIN2=LOW, PWMB=255");
+// }
+
 void loop() {
   frente();
   delay(5000);
@@ -95,5 +136,20 @@ void loop() {
   delay(5000);
 
   tras();
+  delay(5000);
+
+  parada();
+  delay(5000);
+
+  curvaSuaveDireita();
+  delay(5000);
+
+  parada();
+  delay(5000);
+
+  curvaSuaveEsquerda();
+  delay(5000);
+
+  parada();
   delay(5000);
 }
