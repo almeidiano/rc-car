@@ -1,92 +1,38 @@
+// 2x_drivers_semi_parallel
 #include <Arduino.h>
 
-int STBY = 9;   // Standby pin
+// --- LADO DIREITO ---
+const int RIGHT_PWM = 10;  // Pino PWM (~)
+const int R_AIN = 2;
+const int R_BIN = 3;
 
-// Pinos do TB6612FNG para Motor A (lado direito)
-int AIN1 = 8;   // Direction control 1 (motor traseiro)
-int AIN2 = 7;   // Direction control 2 (motor dianteiro)
-int PWMA = 6;   // Speed control (PWM)
-
-// Pinos do TB6612FNG para Motor B (lado esquerdo)
-int BIN1 = 5;   // Direction control 1 (motor traseiro)
-int BIN2 = 4;   // Direction control 2 (motor dianteiro)
-int PWMB = 3;   // Speed control (PWM)
-
-// Declaração das funções
-void parada();
-void frente();
-void tras();
-void curvaDireita();
-void curvaEsquerda();
-void curvaExtremaEsquerda();
-void curvaExtremaDireita();
+// --- LADO ESQUERDO ---
+const int LEFT_PWM = 11;   // Pino PWM (~)
+const int L_AIN = 6;
+const int L_BIN = 7;
 
 void setup() {
-  // Inicializar Serial para debug (9600 baud)
   Serial.begin(9600);
   
-  // Pino de controle lógico
-  pinMode(STBY, OUTPUT);
-  
-  // Pinos A (lado direito)
-  pinMode(AIN1, OUTPUT);
-  pinMode(AIN2, OUTPUT);
-  pinMode(PWMA, OUTPUT);
+  // Configura todos como saída em um loop simples
+  for(int i = 2; i <= 11; i++) {
+    pinMode(i, OUTPUT);
+  }
 
-  // Pinos B (lado esquerdo)
-  pinMode(BIN1, OUTPUT);
-  pinMode(BIN2, OUTPUT);
-  pinMode(PWMB, OUTPUT);  
-
-  // Habilitar o driver
-  digitalWrite(STBY, HIGH);
+  // STBY está no 5V físico, então não precisa de código!
+  Serial.println("4WD Sequencial Pronto!");
 }
 
-// Motor movendo para frente
-void frente() {
-  Serial.println("-> FRENTE");
-  // Motor A (lado esquerdo)
-  digitalWrite(AIN1, LOW);
-  digitalWrite(AIN2, HIGH);
-  analogWrite(PWMA, 255);
-  Serial.println("   Motor A: AIN1=LOW, AIN2=HIGH, PWMA=255");
+void mover(int velEsq, int velDir, bool frenteEsq, bool frenteDir) {
+  // Motores Esquerdos
+  digitalWrite(L_AIN, frenteEsq ? LOW : HIGH);
+  digitalWrite(L_BIN, frenteEsq ? LOW : HIGH);
+  analogWrite(LEFT_PWM, velEsq);
 
-  // Motor B (lado direito)
-  digitalWrite(BIN1, HIGH);
-  digitalWrite(BIN2, LOW);
-  analogWrite(PWMB, 255);
-  Serial.println("   Motor B: BIN1=HIGH, BIN2=LOW, PWMB=255");
-}
-
-// Motor movendo para trás
-void tras() {
-  Serial.println("-> TRÁS");
-  // Motor A (lado esquerdo)
-  digitalWrite(AIN1, HIGH);
-  digitalWrite(AIN2, LOW);
-  analogWrite(PWMA, 255);
-  Serial.println("   Motor A: AIN1=HIGH, AIN2=LOW, PWMA=255");
-
-  // Motor B (lado direito)
-  digitalWrite(BIN1, LOW);
-  digitalWrite(BIN2, HIGH);
-  analogWrite(PWMB, 255);
-  Serial.println("   Motor B: BIN1=LOW, BIN2=HIGH, PWMB=255");
-}
-
-// Motor parado
-void parada() {
-  Serial.println("-> PARADA");
-  // Motor A 
-  digitalWrite(AIN1, LOW);
-  digitalWrite(AIN2, LOW);
-  analogWrite(PWMA, 0);
-
-  // Motor B
-  digitalWrite(BIN1, LOW);
-  digitalWrite(BIN2, LOW);
-  analogWrite(PWMB, 0);
-  Serial.println("   Todos os motores parados");
+  // Motores Direitos
+  digitalWrite(R_AIN, frenteDir ? LOW : HIGH);
+  digitalWrite(R_BIN, frenteDir ? LOW : HIGH);
+  analogWrite(RIGHT_PWM, velDir);
 }
 
 void curvaSuaveDireita() {
@@ -142,36 +88,8 @@ void curvaExtremaDireita() {
 }
 
 void loop() {
-  frente();
-  delay(5000);
-
-  parada();
-  delay(5000);
-
-  tras();
-  delay(5000);
-
-  parada();
-  delay(5000);
-
-  curvaSuaveDireita();
-  delay(5000);
-
-  parada();
-  delay(5000);
-
-  curvaSuaveEsquerda();
-  delay(5000);
-
-  parada();
-  delay(5000);
-
-  curvaExtremaEsquerda();
-  delay(5000);
-
-  parada();
-  delay(5000);
-
-  curvaExtremaDireita();
-  delay(5000);
+  mover(200, 200, true, true); // Frente
+  delay(2000);
+  mover(0, 0, true, true);     // Parar
+  delay(1000);
 }
