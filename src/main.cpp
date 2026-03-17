@@ -88,8 +88,5 @@ void curvaExtremaDireita() {
 }
 
 void loop() {
-  mover(200, 200, true, true); // Frente
-  delay(2000);
-  mover(0, 0, true, true);     // Parar
-  delay(1000);
+  mover(200, 200, true, true); // Sempre frente
 }
