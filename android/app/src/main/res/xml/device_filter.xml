@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placas que abrem o app automaticamente ao conectar o cabo OTG -->
+<resources>
+    <usb-device vendor-id="9025" />  <!-- 0x2341 Arduino (Uno original, ATmega16U2) -->
+    <usb-device vendor-id="10755" /> <!-- 0x2A03 Arduino.org -->
+    <usb-device vendor-id="6790" />  <!-- 0x1A86 CH340 (clones) -->
+    <usb-device vendor-id="1027" />  <!-- 0x0403 FTDI -->
+</resources>

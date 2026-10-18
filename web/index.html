@@ -179,7 +179,7 @@
 <body>
     <div class="container">
         <h1>🚗 Controle RC Car</h1>
-        <p class="subtitle">Controle remoto via WiFi</p>
+        <p class="subtitle">Controle remoto via WiFi → Android → Arduino</p>
         
         <div class="speed-control">
             <div class="speed-label">
@@ -214,49 +214,74 @@
         const speedValue = document.getElementById('speedValue');
         const speedPercent = document.getElementById('speedPercent');
         const statusDiv = document.getElementById('status');
-        
+
+        // Protocolo: mesmo texto que vai para a serial do Arduino
+        const CODIGOS = { frente: 'F', re: 'B', esquerda: 'L', direita: 'R', parar: 'S', freio: 'X' };
+        const NOMES = {
+            frente: 'FRENTE ⬆️', re: 'RÉ ⬇️', esquerda: 'ESQUERDA ⬅️',
+            direita: 'DIREITA ➡️', parar: 'PARADO ⏹️', freio: 'FREIO'
+        };
+
+        // ---------- WebSocket persistente (menor latência que um fetch por comando) ----------
+        let ws = null;
+
+        function conectar() {
+            ws = new WebSocket('ws://' + location.host + '/ws');
+            ws.onopen = () => {
+                statusDiv.textContent = 'Conectado ✅';
+                ws.send('V' + speedSlider.value);
+            };
+            ws.onclose = () => {
+                statusDiv.textContent = 'Sem conexão ⚠️ reconectando…';
+                statusDiv.classList.remove('moving');
+                setTimeout(conectar, 1000);
+            };
+        }
+
+        function enviar(msg) {
+            if (ws && ws.readyState === WebSocket.OPEN) ws.send(msg);
+        }
+
+        conectar();
+        setInterval(() => enviar('P'), 1000); // heartbeat: mantém a conexão viva
+
         speedSlider.addEventListener('input', (e) => {
             const vel = e.target.value;
             speedValue.textContent = vel;
             speedPercent.textContent = Math.round((vel / 255) * 100) + '%';
-            fetch('/set-speed?speed=' + vel);
+            enviar('V' + vel);
         });
-        
+
         // Enquanto um botão de movimento estiver pressionado, o comando é
         // reenviado a cada 200 ms. O Arduino para sozinho se ficar 600 ms
         // sem receber nada (failsafe contra queda de WiFi).
         let repeticao = null;
 
         function enviarComando(comando) {
-            const comandos = {
-                'frente': 'FRENTE ⬆️',
-                're': 'RÉ ⬇️',
-                'esquerda': 'ESQUERDA ⬅️',
-                'direita': 'DIREITA ➡️',
-                'parar': 'PARADO ⏹️'
-            };
-
             clearInterval(repeticao);
             repeticao = null;
 
-            const enviar = () => fetch('/comando?cmd=' + comando).catch(() => {
-                statusDiv.textContent = 'Sem conexão ⚠️';
-            });
-            enviar();
+            const codigo = CODIGOS[comando];
+            enviar(codigo);
 
-            if (comando === 'parar') {
-                statusDiv.textContent = 'Pronto para controlar';
+            if (comando === 'parar' || comando === 'freio') {
+                statusDiv.textContent = NOMES[comando];
                 statusDiv.classList.remove('moving');
             } else {
-                statusDiv.textContent = comandos[comando];
+                statusDiv.textContent = NOMES[comando];
                 statusDiv.classList.add('moving');
-                repeticao = setInterval(enviar, 200);
+                repeticao = setInterval(() => enviar(codigo), 200);
             }
         }
 
         // Evita que o toque dispare também os eventos de mouse (comando duplo)
         document.querySelectorAll('button').forEach(b =>
             b.addEventListener('touchstart', e => e.preventDefault(), { passive: false }));
+
+        // Se a aba perder o foco (ligação, troca de app), para o carro
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) enviarComando('parar');
+        });
     </script>
 </body>
 </html>
